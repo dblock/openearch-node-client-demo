@@ -15,7 +15,7 @@ const { AwsSigv4Signer } = require('@opensearch-project/opensearch/aws');
 async function main() {
   const client = new Client({
     ...AwsSigv4Signer({
-      region: process.env.OPENSEARCH_REGION || 'us-east-1',
+      region: process.env.AWS_REGION || 'us-east-1',
       getCredentials: () => {
         const credentialsProvider = defaultProvider();
         return credentialsProvider();
@@ -29,20 +29,20 @@ async function main() {
   console.log(version.distribution + ": " + version.number);
 
   // create an index
-  const index = 'sample-index'
+  const index = 'movies'
   await client.indices.create({ index: index })
 
   try {
     // index data
-    const document = { first_name: 'Bruce' };
+    const document = { title: 'Moneyball', director: 'Bennett Miller', year: 2011 };
     await client.index({ index: index, body: document, id: '1', refresh: true })
 
     // wait for the document to index
-    await new Promise(r => setTimeout(r, 3000));
+    await new Promise(r => setTimeout(r, 1000));
 
     // search for the document
-    var results = await client.search({ body: { query: { match: { first_name: 'bruce' } } } });
-    results.body.hits.hits.forEach((hit) => console.log(hit));
+    var results = await client.search({ body: { query: { match: { director: 'miller' } } } });
+    results.body.hits.hits.forEach((hit) => console.log(hit._source));
 
     // delete the document
     await client.delete({ index: index, id: '1' })

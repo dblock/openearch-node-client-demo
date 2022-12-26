@@ -38,9 +38,9 @@ Create an OpenSearch domain in (AWS) which support IAM based AuthN/AuthZ and run
 export AWS_ACCESS_KEY_ID=
 export AWS_SECRET_ACCESS_KEY=
 export AWS_SESSION_TOKEN=
+export AWS_REGION=us-west-2
 
 export OPENSEARCH_ENDPOINT=https://....us-west-2.es.amazonaws.com
-export OPENSEARCH_REGION=us-west-2
 
 ts-node src/index.ts
 ```
@@ -50,12 +50,7 @@ The [code](src/index.ts) will connect to OpenSearch, display its version, create
 ```
 opensearch: 2.3.0
 
-{
-  _index: 'sample-index',
-  _id: '1',
-  _score: 0.2876821,
-  _source: { first_name: 'Bruce' }
-}
+{ title: 'Moneyball', director: 'Bennett Miller', year: 2011 }
 ```
 
 ## License 
