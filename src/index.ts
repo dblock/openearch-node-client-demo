@@ -8,34 +8,48 @@
  *
  */
 
-const { defaultProvider } = require("@aws-sdk/credential-provider-node"); // V3 SDK.
-const { Client } = require('@opensearch-project/opensearch');
-const { AwsSigv4Signer } = require('@opensearch-project/opensearch/aws');
+var AWS = require('aws-sdk');
+var aws4 = require('./aws4');
+const { Client, Connection } = require('@opensearch-project/opensearch');
 
 async function main() {
   const client = new Client({
-    ...AwsSigv4Signer({
-      region: process.env.AWS_REGION || 'us-east-1',
-      getCredentials: () => {
-        const credentialsProvider = defaultProvider();
-        return credentialsProvider();
-      },
-    }),
+    Connection: class extends Connection {
+      buildRequestObject (params) {
+        var request = super.buildRequestObject(params)
+        request.service = 'aoss';
+        request.region = process.env.AWS_REGION || 'us-east-1';
+  
+        var contentLength = request.headers['content-length'];
+        if (contentLength) {
+          delete(request.headers['content-length'])
+          request.headers['x-amz-content-sha256'] = 'UNSIGNED-PAYLOAD';
+        }
+
+        request = aws4.sign(request, AWS.config.credentials);
+
+        if (contentLength !== undefined) {
+          request.headers['Content-Length'] = contentLength;
+        }
+
+        return request
+      }
+    },
     node: process.env.OPENSEARCH_ENDPOINT
   });
 
-  var info = await client.info();
-  var version = info.body.version
-  console.log(version.distribution + ": " + version.number);
+  // var info = await client.info();
+  // var version = info.body.version
+  // console.log(version.distribution + ": " + version.number);
 
   // create an index
   const index = 'movies'
-  await client.indices.create({ index: index })
+  console.log((await client.indices.create({ index: index })).body);
 
   try {
     // index data
     const document = { title: 'Moneyball', director: 'Bennett Miller', year: 2011 };
-    await client.index({ index: index, body: document, id: '1', refresh: true })
+    console.log((await client.index({ index: index, body: document, id: '1' })).body);
 
     // wait for the document to index
     await new Promise(r => setTimeout(r, 1000));
@@ -45,10 +59,10 @@ async function main() {
     results.body.hits.hits.forEach((hit) => console.log(hit._source));
 
     // delete the document
-    await client.delete({ index: index, id: '1' })
+    console.log((await client.delete({ index: index, id: '1' })).body);
   } finally {
     // delete the index
-    await client.indices.delete({ index: index })
+    console.log((await client.indices.delete({ index: index })).body);
   }
 }
 
