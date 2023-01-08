@@ -9,7 +9,7 @@
  */
 
 var AWS = require('aws-sdk');
-var aws4 = require('./aws4');
+var aws4 = require('aws4');
 const { Client, Connection } = require('@opensearch-project/opensearch');
 
 async function main() {
@@ -19,19 +19,11 @@ async function main() {
         var request = super.buildRequestObject(params)
         request.service = 'aoss';
         request.region = process.env.AWS_REGION || 'us-east-1';
-  
-        var contentLength = request.headers['content-length'];
-        if (contentLength) {
-          delete(request.headers['content-length'])
-          request.headers['x-amz-content-sha256'] = 'UNSIGNED-PAYLOAD';
-        }
-
+        var body = request.body;
+        delete request.headers['content-length']
+        request.body = undefined;
         request = aws4.sign(request, AWS.config.credentials);
-
-        if (contentLength !== undefined) {
-          request.headers['Content-Length'] = contentLength;
-        }
-
+        request.body = body;
         return request
       }
     },
