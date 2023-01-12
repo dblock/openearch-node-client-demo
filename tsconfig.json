@@ -6,6 +6,8 @@
     "node_modules",
   ],
   "compilerOptions": {
+    "allowJs": true,
+    "target": "ES6",
     "lib": [
       "es6",
       "dom",

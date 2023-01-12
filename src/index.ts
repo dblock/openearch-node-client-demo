@@ -1,55 +1,53 @@
-/*
- * Copyright OpenSearch Contributors
- * SPDX-License-Identifier: Apache-2.0
- *
- * The OpenSearch Contributors require contributions made to
- * this file be licensed under the Apache-2.0 license or a
- * compatible open source license.
- *
- */
+var AWS = require('aws-sdk');
+var aws4  = require('aws4');
+var { Client, Connection } = require("@opensearch-project/opensearch");
 
-const { defaultProvider } = require("@aws-sdk/credential-provider-node"); // V3 SDK.
-const { Client } = require('@opensearch-project/opensearch');
-const { AwsSigv4Signer } = require('@opensearch-project/opensearch/aws');
+var client = new Client({
+  node: process.env.ENDPOINT,
+  Connection: class extends Connection {
+    buildRequestObject (params) {
+      var request = super.buildRequestObject(params)
+      request.service = 'aoss';
+      request.region = process.env.AWS_REGION;
 
-async function main() {
-  const client = new Client({
-    ...AwsSigv4Signer({
-      region: process.env.AWS_REGION || 'us-east-1',
-      getCredentials: () => {
-        const credentialsProvider = defaultProvider();
-        return credentialsProvider();
-      },
-    }),
-    node: process.env.OPENSEARCH_ENDPOINT
+      var contentLength = '0';
+
+      if (request.headers['content-length']) {
+        contentLength = request.headers['content-length'];
+        request.headers['content-length'] = '0';
+      }
+      request.headers['x-amz-content-sha256'] = 'UNSIGNED-PAYLOAD';
+      request = aws4.sign(request, AWS.config.credentials);
+      request.headers['content-length'] = contentLength;
+
+      return request
+    }
+  }
+});
+
+async function index_document() {
+  // Create an index with non-default settings.
+  var index_name = "my-index";
+  var settings = "{ \"settings\": { \"number_of_shards\": 1, \"number_of_replicas\": 0 }, \"mappings\": { \"properties\": { \"title\": {\"type\": \"text\"}, \"director\": {\"type\": \"text\"}, \"year\": {\"type\": \"text\"} } } }";
+
+  var response = await client.indices.create({
+    index: index_name,
+    body: settings
   });
 
-  var info = await client.info();
-  var version = info.body.version
-  console.log(version.distribution + ": " + version.number);
+  console.log("Creating index:");
+  console.log(response.body);
 
-  // create an index
-  const index = 'movies'
-  await client.indices.create({ index: index })
+  // Add a document to the index
+  var document = "{ \"title\": \"Avatar\", \"director\": \"James Cameron\", \"year\": \"2003\" }\n";
 
-  try {
-    // index data
-    const document = { title: 'Moneyball', director: 'Bennett Miller', year: 2011 };
-    await client.index({ index: index, body: document, id: '1', refresh: true })
+  var response = await client.index({
+    index: index_name,
+    body: document
+  });
 
-    // wait for the document to index
-    await new Promise(r => setTimeout(r, 1000));
-
-    // search for the document
-    var results = await client.search({ body: { query: { match: { director: 'miller' } } } });
-    results.body.hits.hits.forEach((hit) => console.log(hit._source));
-
-    // delete the document
-    await client.delete({ index: index, id: '1' })
-  } finally {
-    // delete the index
-    await client.indices.delete({ index: index })
-  }
+  console.log("Adding document:");
+  console.log(response.body);
 }
 
-main();
+index_document().catch(console.log);
