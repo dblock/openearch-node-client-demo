@@ -21,7 +21,7 @@ async function main() {
         return credentialsProvider();
       },
     }),
-    node: process.env.OPENSEARCH_ENDPOINT
+    node: process.env.ENDPOINT
   });
 
   var info = await client.info();
