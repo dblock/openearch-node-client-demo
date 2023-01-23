@@ -1,6 +1,6 @@
 # OpenSearch Node.js Client Demo
 
-Makes requests to Amazon OpenSearch using the [OpenSearch Node.js Client](https://github.com/opensearch-project/opensearch-js). Written in TypeScript.
+Makes requests to Amazon OpenSearch using the [OpenSearch Node.js Client](https://github.com/opensearch-project/opensearch-js). Written in TypeScript. Supports OpenSearch Serverless since opensearch-js 2.2.0.
 
 ### Install Prerequisites
 
@@ -40,6 +40,7 @@ export AWS_SECRET_ACCESS_KEY=
 export AWS_SESSION_TOKEN=
 export AWS_REGION=us-west-2
 
+export SERVICE=es # use aoss for OpenSearch Serverless
 export ENDPOINT=https://....us-west-2.es.amazonaws.com
 
 ts-node src/index.ts
@@ -51,6 +52,12 @@ The [code](src/index.ts) will connect to OpenSearch, display its version, create
 opensearch: 2.3.0
 
 { title: 'Moneyball', director: 'Bennett Miller', year: 2011 }
+```
+
+Run with `DEBUG=*` to see detailed output.
+
+```
+DEBUG=* ts-node src/index.ts
 ```
 
 ## License 

@@ -16,6 +16,7 @@ async function main() {
   const client = new Client({
     ...AwsSigv4Signer({
       region: process.env.AWS_REGION || 'us-east-1',
+      service: process.env.SERVICE || 'es',
       getCredentials: () => {
         const credentialsProvider = defaultProvider();
         return credentialsProvider();
@@ -24,18 +25,22 @@ async function main() {
     node: process.env.ENDPOINT
   });
 
-  var info = await client.info();
-  var version = info.body.version
-  console.log(version.distribution + ": " + version.number);
+  // TODO: remove when OpenSearch Serverless re-adds /
+  if (process.env.SERVICE != 'aoss') {
+    var info = await client.info();
+    var version = info.body.version
+    console.log(version.distribution + ": " + version.number);
+  }
 
   // create an index
   const index = 'movies'
+
   await client.indices.create({ index: index })
 
   try {
     // index data
     const document = { title: 'Moneyball', director: 'Bennett Miller', year: 2011 };
-    await client.index({ index: index, body: document, id: '1', refresh: true })
+    await client.index({ index: index, body: document, id: '1' })
 
     // wait for the document to index
     await new Promise(r => setTimeout(r, 1000));
