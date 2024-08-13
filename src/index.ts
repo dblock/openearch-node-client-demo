@@ -8,28 +8,28 @@
  *
  */
 
-const { defaultProvider } = require("@aws-sdk/credential-provider-node"); // V3 SDK.
-const { Client } = require('@opensearch-project/opensearch');
-const { AwsSigv4Signer } = require('@opensearch-project/opensearch/aws');
+import { defaultProvider } from "@aws-sdk/credential-provider-node" // V3 SDK.
+import { Client } from '@opensearch-project/opensearch'
+import { AwsSigv4Signer } from '@opensearch-project/opensearch/aws'
 
 async function main() {
   const client = new Client({
     ...AwsSigv4Signer({
       region: process.env.AWS_REGION || 'us-east-1',
-      service: process.env.SERVICE || 'es',
+      service: process.env.SERVICE as any || 'es',
       getCredentials: () => {
-        const credentialsProvider = defaultProvider();
-        return credentialsProvider();
+        const credentialsProvider = defaultProvider()
+        return credentialsProvider()
       },
     }),
     node: process.env.ENDPOINT
-  });
+  })
 
-  // TODO: remove when OpenSearch Serverless re-adds /
-  if (process.env.SERVICE != 'aoss') {
-    var info = await client.info();
+  // TODO: remove when OpenSearch Serverless re-adds GET /
+  if (process.env.SERVICE !== 'aoss') {
+    var info = await client.info()
     var version = info.body.version
-    console.log(version.distribution + ": " + version.number);
+    console.log(version.distribution + ": " + version.number)
   }
 
   // create an index
@@ -39,15 +39,15 @@ async function main() {
 
   try {
     // index data
-    const document = { title: 'Moneyball', director: 'Bennett Miller', year: 2011 };
+    const document = { title: 'Moneyball', director: 'Bennett Miller', year: 2011 }
     await client.index({ index: index, body: document, id: '1' })
 
     // wait for the document to index
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 1000))
 
     // search for the document
-    var results = await client.search({ body: { query: { match: { director: 'miller' } } } });
-    results.body.hits.hits.forEach((hit) => console.log(hit._source));
+    var results = await client.search({ body: { query: { match: { director: 'miller' } } } })
+    results.body.hits.hits.forEach((hit) => console.log(hit._source))
 
     // delete the document
     await client.delete({ index: index, id: '1' })
@@ -57,4 +57,4 @@ async function main() {
   }
 }
 
-main();
+main()
